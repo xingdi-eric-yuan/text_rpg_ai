@@ -40,6 +40,7 @@ def run(params, filename, directory, steps = 2000, quiet = False):
         score = 0
         max_score = 0
         possible_score = 0
+        step_taken, tmp_score = 0, 0
 
         t = tp.TextPlayer(filename, directory)
         start_info = t.run()
@@ -56,6 +57,7 @@ def run(params, filename, directory, steps = 2000, quiet = False):
         noneCount = 0
         for i in range(steps):
             command, command_type, response, additional = agent.makeAction()
+            step_taken += 1
             if not quiet:
                 print 'map size:', len(agent.map.edges)
                 print agent.desc
@@ -67,21 +69,28 @@ def run(params, filename, directory, steps = 2000, quiet = False):
             logger.log(command_type, command)
             logger.log('response', response)
 
-            tscore = t.get_score()
-            if tscore is not None:
-                (score, possible_score) = tscore
-                if score > max_score:
-                    agent.save_path()
-                max_score = max(max_score, score)
-                if not quiet:
-                    print("Score:", score, "Possible score:", possible_score)
+            # tscore = t.get_score()
+            # if tscore is not None:
+            #     (score, possible_score) = tscore
+            #     if score > max_score:
+            #         agent.save_path()
+            #     max_score = max(max_score, score)
+            #     if not quiet:
+            #         print("Score:", score, "Possible score:", possible_score)
 
-                logger.log('score', str(score) + ' ' + str(possible_score))
-                noneCount = 0
-            else:
-                noneCount += 1
-                if noneCount > 10:
-                    break
+            #     logger.log('score', str(score) + ' ' + str(possible_score))
+            #     noneCount = 0
+            # else:
+            #     noneCount += 1
+            #     if noneCount > 10:
+            #         break
+            print("--- ", command, response)
+            if "*** The End ***" in response:
+                tmp_score = 1
+                break
+            elif "*** You lost! ***" in response:
+                tmp_score = -1
+                break
 
             if quiet:
                 print '\r{0}: {1}%, score: {2} / {3}'.format(filename, (i+1) * 100 / steps, score, possible_score),
@@ -112,10 +121,9 @@ def run(params, filename, directory, steps = 2000, quiet = False):
             print "IOError"
         pass
 
-    scores.write("{3} {0} (max {2}) / {1}\n".format(score, possible_score, max_score, filename))
+    scores.write("{3} {0} (max {2}) / {1} (step {4}, score {5})\n".format(score, possible_score, max_score, filename, step_taken, tmp_score))
     if quiet:
-        print '\r{0}: finished, score: {1} / {3}, max score: {2} / {3}'.format(filename,
-            score, max_score, possible_score)
+        print '\r{0}: finished, score: {1} / {3}, max score: {2} / {3} (step {4}, score {5})'.format(filename, score, max_score, possible_score, step_taken, tmp_score)
     else:
         print 'final score:', score
         print 'max score:', max_score
